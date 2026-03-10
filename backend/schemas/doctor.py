@@ -1,7 +1,14 @@
+# schemas/doctor.py
+
+from __future__ import annotations
 from pydantic import BaseModel
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from schemas.department import DepartmentResponse
 
 
-# --- Base --- common fields
+# --- Base ---
 class DoctorBase(BaseModel):
     name: str
     specialization: str
@@ -10,12 +17,12 @@ class DoctorBase(BaseModel):
     department_id: int
 
 
-# --- Create --- request body
+# --- Create ---
 class DoctorCreate(DoctorBase):
     pass
 
 
-# --- Update --- optional fields
+# --- Update ---
 class DoctorUpdate(BaseModel):
     name: str | None = None
     specialization: str | None = None
@@ -24,16 +31,8 @@ class DoctorUpdate(BaseModel):
     department_id: int | None = None
 
 
-# --- Response --- what API returns
+# --- Response ---
 class DoctorResponse(DoctorBase):
     id: int
-
-    model_config = {"from_attributes": True}
-
-
-# --- Response with Department --- nested response
-class DoctorWithDepartment(DoctorResponse):
-    from schemas.department import DepartmentResponse
-    department: DepartmentResponse | None = None
 
     model_config = {"from_attributes": True}
