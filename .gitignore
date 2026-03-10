@@ -1,0 +1,51 @@
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment Variables
+backend/.env
+.env
+
+# SQLite Database
+*.db
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Pytest
+.pytest_cache/
+
+# ===== FRONTEND =====
+
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+
+# Environment Variables
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ===== GENERAL =====
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Logs
+*.log
+logs/
