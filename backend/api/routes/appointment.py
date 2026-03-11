@@ -41,6 +41,7 @@ def book_appointment(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
+    # Set user_id from token, not from request body
     appointment.user_id = user_id
     result = create_appointment(db, appointment)
     if not result:
@@ -83,10 +84,23 @@ def cancel_appointment_route(
     db: Session = Depends(get_db),
     user_id: int = Depends(get_current_user_id),
 ):
-    result = cancel_appointment(db, appointment_id)
-    if not result:
+    # First check if appointment exists
+    appointment = get_appointment(db, appointment_id)
+    if not appointment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Appointment not found"
+        )
+    # Ownership check — user can only cancel their own appointment
+    if appointment.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only cancel your own appointments"
+        )
+    result = cancel_appointment(db, appointment_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Could not cancel appointment"
         )
     return {"message": "Appointment cancelled successfully"}

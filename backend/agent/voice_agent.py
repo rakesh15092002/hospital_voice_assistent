@@ -1,9 +1,11 @@
+# agent/voice_agent.py
+
 import json
 import sys
 import os
 from dotenv import load_dotenv
 
-# .env load karo
+# Load .env file
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -101,12 +103,68 @@ class HospitalAssistant(Agent):
 async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
+    # Get user_id and session from DB
+    user_id = int(ctx.room.metadata) if ctx.room.metadata else None
+    db = SessionLocal()
+    session_obj = get_session_by_livekit_sid(db, ctx.room.name)
+    session_id = session_obj.id if session_obj else None
+    db.close()
+
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=openai.STT(),
         llm=openai.LLM(model="gpt-4o-mini"),
         tts=openai.TTS(voice="alloy"),
     )
+
+    # Store last user transcript
+    last_user_transcript = {"text": ""}
+
+    @session.on("user_input_transcribed")
+    def on_user_transcribed(event) -> None:
+        # Save final transcript only
+        if hasattr(event, "is_final") and event.is_final:
+            last_user_transcript["text"] = event.transcript
+            print(f"[TRANSCRIPT] User said: {event.transcript}")
+
+    @session.on("conversation_item_added")
+    def on_conversation_item(event) -> None:
+        # Save log when agent responds
+        if not session_id:
+            return
+        try:
+            item = event.item
+            # Only save when agent message is added
+            if hasattr(item, "role") and item.role == "assistant":
+                agent_response = ""
+                if hasattr(item, "text_content"):
+                    agent_response = item.text_content or ""
+
+                transcript = last_user_transcript["text"]
+
+                # Check for emergency keywords
+                is_emergency = any(word in transcript.lower() for word in [
+                    "chest pain", "can't breathe", "unconscious",
+                    "severe bleeding", "stroke", "heart attack"
+                ])
+
+                if transcript:  # Only save if user said something
+                    db = SessionLocal()
+                    try:
+                        save_voice_log(
+                            db=db,
+                            session_id=session_id,
+                            transcript=transcript,
+                            ai_response=agent_response,
+                            is_emergency=is_emergency,
+                        )
+                        print(f"[LOG SAVED] transcript={transcript[:50]}  emergency={is_emergency}")
+                    finally:
+                        db.close()
+                    # Reset after saving
+                    last_user_transcript["text"] = ""
+        except Exception as e:
+            print(f"[LOG ERROR] {e}")
 
     await session.start(
         room=ctx.room,

@@ -1,10 +1,16 @@
 # database.py
 
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base
+from dotenv import load_dotenv
 
-DATABASE_URL = "sqlite:///./hospital_chatbot.db"
+# Load .env file
+load_dotenv()
+
+# Get DATABASE_URL from .env, fallback to SQLite if not found
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hospital_chatbot.db")
 
 engine = create_engine(
     DATABASE_URL,
