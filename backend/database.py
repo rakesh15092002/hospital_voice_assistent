@@ -6,18 +6,18 @@ from models import Base
 from core.config import settings
 
 
-# ✅ Fix 1 - SQLite aur PostgreSQL dono support
+# ✅ Fix 1 - SQLite and PostgreSQL support
 def get_engine():
     if settings.DATABASE_URL.startswith("sqlite"):
         return create_engine(
             settings.DATABASE_URL,
-            connect_args={"check_same_thread": False},  # SQLite only
-            echo=settings.DEBUG,  # ✅ Fix 3 - DEBUG mode se control
+            connect_args={"check_same_thread": False},  
+            echo=settings.DEBUG, 
         )
     else:
         return create_engine(
             settings.DATABASE_URL,
-            echo=settings.DEBUG,  # ✅ Fix 3 - DEBUG mode se control
+            echo=settings.DEBUG,  
         )
 
 

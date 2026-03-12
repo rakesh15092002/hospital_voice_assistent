@@ -83,14 +83,10 @@ def cancel_user_appointment(db: Session, appointment_id: int) -> dict:
 
 # --- Tool 5: Check Appointment Status ---
 def check_appointment_status(db: Session, appointment_id: int) -> dict:
-    """Check the status of an existing appointment"""
     appointment = get_appointment(db, appointment_id)
     if not appointment:
         return {"found": False, "message": "Appointment not found."}
-
-    # get slot info
     slot = db.query(DoctorSlot).filter(DoctorSlot.id == appointment.slot_id).first()
-
     return {
         "found": True,
         "appointment_id": appointment.id,
@@ -103,29 +99,21 @@ def check_appointment_status(db: Session, appointment_id: int) -> dict:
 
 # --- Tool 6: Reschedule Appointment ---
 def reschedule_appointment(db: Session, appointment_id: int, new_slot_id: int) -> dict:
-    """Cancel old slot and book new slot"""
     old_appointment = get_appointment(db, appointment_id)
     if not old_appointment:
         return {"success": False, "message": "Appointment not found."}
-
-    # check new slot available hai
     new_slot = db.query(DoctorSlot).filter(
         DoctorSlot.id == new_slot_id,
         DoctorSlot.is_booked == False
     ).first()
     if not new_slot:
         return {"success": False, "message": "New slot is not available."}
-
-    # free old slot
     old_slot = db.query(DoctorSlot).filter(DoctorSlot.id == old_appointment.slot_id).first()
     if old_slot:
         old_slot.is_booked = False
-
-    # book new slot
     old_appointment.slot_id = new_slot_id
     old_appointment.status = AppointmentStatus.confirmed
     new_slot.is_booked = True
-
     db.commit()
     return {
         "success": True,
@@ -135,14 +123,11 @@ def reschedule_appointment(db: Session, appointment_id: int, new_slot_id: int) -
 
 # --- Tool 7: Emergency Triage ---
 def emergency_triage(situation: str) -> dict:
-    """
-    Stop all flows and handle emergency immediately
-    Triggered by keywords like chest pain, accident, unconscious
-    """
     from core.config import settings
     emergency_keywords = [
         "chest pain", "heart attack", "can't breathe", "unconscious",
-        "severe bleeding", "stroke", "accident", "ambulance", "dying"
+        "severe bleeding", "stroke", "accident", "ambulance", "dying",
+        "not breathing", "collapsed", "overdose", "poisoning", "burns"
     ]
     situation_lower = situation.lower()
     is_emergency = any(keyword in situation_lower for keyword in emergency_keywords)
@@ -150,28 +135,57 @@ def emergency_triage(situation: str) -> dict:
     if is_emergency:
         return {
             "is_emergency": True,
-            "message": f"EMERGENCY DETECTED! Please call {settings.HOSPITAL_EMERGENCY_PHONE} immediately or go to Emergency Ward on Ground Floor. Do not wait!",
-            "emergency_phone": settings.HOSPITAL_EMERGENCY_PHONE,
-            "emergency_location": "Ground Floor - Emergency Ward",
+            "message": (
+                f"EMERGENCY DETECTED! Please call {settings.HOSPITAL_DIRECT_EMERGENCY} immediately "
+                f"or go to Emergency Ward on Ground Floor, right side entrance. Do not wait! "
+                f"National Emergency: {settings.HOSPITAL_EMERGENCY_PHONE}"
+            ),
+            "emergency_phone": settings.HOSPITAL_DIRECT_EMERGENCY,
+            "national_emergency": settings.HOSPITAL_EMERGENCY_PHONE,
+            "emergency_location": "Ground Floor - Emergency Ward, Right Side Entrance",
+            "ambulance_bay": "Ground Floor, Right Side Exit",
         }
     return {"is_emergency": False, "message": "No emergency detected."}
 
 
 # --- Tool 8: Get Internal Location ---
 def get_internal_location(place: str) -> dict:
-    """Find internal hospital locations like pharmacy, ward, etc."""
+    from core.config import settings
     locations = {
-        "pharmacy": "Ground Floor, near main entrance",
-        "emergency": "Ground Floor, right wing",
-        "cardiology": "3rd Floor",
-        "orthopedics": "2nd Floor",
-        "ent": "2nd Floor",
-        "neurology": "4th Floor",
-        "general medicine": "1st Floor",
-        "reception": "Ground Floor, main entrance",
-        "cafeteria": "1st Floor, left wing",
-        "parking": "Basement",
-        "lift": "Near reception, Ground Floor",
+        "pharmacy":          "Ground Floor, near main exit",
+        "lab":               "Ground Floor, left wing",
+        "laboratory":        "Ground Floor, left wing",
+        "x-ray":             "Ground Floor, left wing, next to Lab",
+        "radiology":         "Ground Floor, left wing, next to Lab",
+        "blood bank":        "3rd Floor",
+        "operation theatre": "3rd Floor",
+        "ot":                "3rd Floor",
+        "icu":               "2nd Floor, restricted area",
+        "emergency":         "Ground Floor, right side entrance",
+        "ambulance":         "Ground Floor, right side exit",
+        "cafeteria":         "1st Floor, left wing",
+        "canteen":           "1st Floor, left wing",
+        "parking":           "Basement and open area outside",
+        "atm":               "Ground Floor, near reception",
+        "wheelchair":        "Available at Reception, Ground Floor",
+        "lift":              "Near Reception, Ground Floor",
+        "elevator":          "Near Reception, Ground Floor",
+        "washroom":          "Every floor, near elevator",
+        "toilet":            "Every floor, near elevator",
+        "reception":         "Ground Floor, main entrance",
+        "cardiology":        "2nd Floor, Room 201-202",
+        "neurology":         "3rd Floor, Room 301-302",
+        "orthopedic":        "2nd Floor, Room 210-211",
+        "ent":               "1st Floor, Room 105-106",
+        "dermatology":       "1st Floor, Room 110",
+        "eye":               "1st Floor, Room 115",
+        "ophthalmology":     "1st Floor, Room 115",
+        "gynecology":        "3rd Floor, Room 310",
+        "gynae":             "3rd Floor, Room 310",
+        "pediatric":         "1st Floor, Room 120-121",
+        "children":          "1st Floor, Room 120-121",
+        "gastro":            "2nd Floor, Room 215-216",
+        "general medicine":  "Ground Floor, Room 05-06",
     }
 
     place_lower = place.lower()
@@ -186,7 +200,7 @@ def get_internal_location(place: str) -> dict:
 
     return {
         "found": False,
-        "message": "Location not found. Please ask at the reception on Ground Floor."
+        "message": f"Location not found. Please ask at the Reception on Ground Floor or call {settings.HOSPITAL_PHONE}."
     }
 
 
@@ -213,7 +227,15 @@ def get_hospital_info() -> dict:
     from core.config import settings
     return {
         "name": settings.HOSPITAL_NAME,
-        "emergency_phone": settings.HOSPITAL_EMERGENCY_PHONE,
-        "opening_time": settings.HOSPITAL_OPENING_TIME,
+        "tagline": settings.HOSPITAL_TAGLINE,
         "address": settings.HOSPITAL_ADDRESS,
+        "phone": settings.HOSPITAL_PHONE,
+        "emergency_phone": settings.HOSPITAL_EMERGENCY_PHONE,
+        "direct_emergency": settings.HOSPITAL_DIRECT_EMERGENCY,
+        "email": settings.HOSPITAL_EMAIL,
+        "opening_time": settings.HOSPITAL_OPENING_TIME,
+        "closing_time": settings.HOSPITAL_CLOSING_TIME,
+        "emergency_hours": settings.HOSPITAL_EMERGENCY_HOURS,
+        "departments": settings.HOSPITAL_DEPARTMENTS,
+        "floors": settings.HOSPITAL_FLOORS,
     }
