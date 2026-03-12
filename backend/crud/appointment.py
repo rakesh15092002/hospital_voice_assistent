@@ -1,32 +1,63 @@
 # crud/appointment.py
 
+import json
+import os
 from sqlalchemy.orm import Session
 from models.appointment import Appointment
 from models.doctor_slot import DoctorSlot
+from models.user import User
 from schemas.appointment import AppointmentCreate, AppointmentStatus
+from core.email import send_appointment_email
+
+
+def load_doctors() -> list[dict]:
+    """Load doctors from JSON file"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    json_path = os.path.join(base_dir, "data", "doctors.json")
+    with open(json_path, "r") as f:
+        return json.load(f)
 
 
 # --- Create --- book appointment
 def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointment | None:
-    # first check slot available hai ya nahi
+    # Check if slot is available
     slot = db.query(DoctorSlot).filter(DoctorSlot.id == appointment.slot_id).first()
     if not slot or slot.is_booked:
-        return None  # slot already booked hai
+        return None
 
-    # appointment banao — status schema se aayega, hardcoded nahi
+    # Create appointment — status comes from schema, not hardcoded
     db_appointment = Appointment(
         user_id=appointment.user_id,
         doctor_id=appointment.doctor_id,
         slot_id=appointment.slot_id,
-        status=appointment.status,  # fix: pehle hardcoded AppointmentStatus.pending tha
+        status=appointment.status,
     )
     db.add(db_appointment)
 
-    # slot ko booked mark karo
+    # Mark slot as booked
     slot.is_booked = True
-
     db.commit()
     db.refresh(db_appointment)
+
+    # Send confirmation email
+    try:
+        user = db.query(User).filter(User.id == appointment.user_id).first()
+        doctors = load_doctors()
+        doctor = next((d for d in doctors if d["id"] == appointment.doctor_id), None)
+
+        if user and user.email and doctor:
+            send_appointment_email(
+                to_email=user.email,
+                patient_name=user.name or "Patient",
+                doctor_name=doctor["name"],
+                doctor_specialization=doctor["specialization"],
+                slot_start=str(slot.start_time),
+                slot_end=str(slot.end_time),
+                appointment_id=db_appointment.id,
+            )
+    except Exception as e:
+        print(f"[EMAIL ERROR] Could not send email: {e}")
+
     return db_appointment
 
 
@@ -51,13 +82,13 @@ def update_appointment_status(db: Session, appointment_id: int, status: Appointm
     return db_appointment
 
 
-# --- Cancel --- appointment cancel karo aur slot free karo
+# --- Cancel --- free the slot too
 def cancel_appointment(db: Session, appointment_id: int) -> bool:
     db_appointment = get_appointment(db, appointment_id)
     if not db_appointment:
         return False
 
-    # slot wapas free karo
+    # Free the slot
     slot = db.query(DoctorSlot).filter(DoctorSlot.id == db_appointment.slot_id).first()
     if slot:
         slot.is_booked = False

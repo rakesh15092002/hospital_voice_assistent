@@ -32,8 +32,8 @@ from schemas.voice_session import VoiceSessionCreate
 
 
 class HospitalAssistant(Agent):
-    def __init__(self) -> None:
-        super().__init__(instructions=SYSTEM_PROMPT)
+    def __init__(self, instructions: str) -> None:
+        super().__init__(instructions=instructions)
 
     async def find_doctor_tool(self, symptoms: str) -> str:
         """Find a doctor based on patient symptoms"""
@@ -101,12 +101,30 @@ class HospitalAssistant(Agent):
         return json.dumps(result)
 
 
+def extract_user_id_from_room(room_name: str) -> int | None:
+    """Extract user_id from room name — hospital_room_4 -> 4"""
+    try:
+        parts = room_name.split("_")
+        return int(parts[-1])
+    except Exception:
+        return None
+
+
 async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
-    # Get user_id from room metadata (set by frontend/postman)
-    user_id = int(ctx.room.metadata) if ctx.room.metadata else None
     room_name = ctx.room.name
+
+    # Get user_id — first try metadata, then extract from room name
+    user_id = None
+    if ctx.room.metadata:
+        try:
+            user_id = int(ctx.room.metadata)
+        except Exception:
+            pass
+
+    if not user_id:
+        user_id = extract_user_id_from_room(room_name)
 
     print(f"[AGENT] Room: {room_name} | User ID: {user_id}")
 
@@ -115,17 +133,24 @@ async def entrypoint(ctx: JobContext):
     try:
         session_obj = get_session_by_livekit_sid(db, room_name)
         if not session_obj:
-            # Auto create session if not found (e.g. from playground)
             session_obj = create_voice_session(db, VoiceSessionCreate(
                 user_id=user_id,
                 livekit_sid=room_name,
             ))
             print(f"[AGENT] New session created: {session_obj.id}")
         else:
+            if session_obj.user_id is None and user_id:
+                session_obj.user_id = user_id
+                db.commit()
             print(f"[AGENT] Existing session found: {session_obj.id}")
         session_id = session_obj.id
     finally:
         db.close()
+
+    # Pass user_id to agent in system prompt
+    dynamic_prompt = SYSTEM_PROMPT
+    if user_id:
+        dynamic_prompt += f"\n\n## Current User\n- User ID: {user_id}\n- Always use this exact user_id={user_id} when calling book_appointment_tool or cancel_appointment_tool."
 
     session = AgentSession(
         vad=silero.VAD.load(),
@@ -156,7 +181,6 @@ async def entrypoint(ctx: JobContext):
                 if not transcript:
                     return
 
-                # Check for emergency keywords
                 is_emergency = any(word in transcript.lower() for word in [
                     "chest pain", "can't breathe", "unconscious",
                     "severe bleeding", "stroke", "heart attack"
@@ -175,14 +199,13 @@ async def entrypoint(ctx: JobContext):
                 finally:
                     db.close()
 
-                # Reset after saving
                 last_user_transcript["text"] = ""
         except Exception as e:
             print(f"[LOG ERROR] {e}")
 
     await session.start(
         room=ctx.room,
-        agent=HospitalAssistant(),
+        agent=HospitalAssistant(instructions=dynamic_prompt),
     )
 
     await session.say(

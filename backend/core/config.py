@@ -25,6 +25,12 @@ class Settings(BaseSettings):
     # --- OpenAI ---
     OPENAI_API_KEY: str
 
+    # --- Email ---
+    EMAIL_HOST: str = "smtp.gmail.com"
+    EMAIL_PORT: int = 587
+    EMAIL_USER: str = ""
+    EMAIL_PASSWORD: str = ""
+
     # --- Hospital (hardcoded) ---
     HOSPITAL_NAME: str = "City Hospital"
     HOSPITAL_EMERGENCY_PHONE: str = "108"
