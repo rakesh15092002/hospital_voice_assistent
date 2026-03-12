@@ -6,6 +6,7 @@ from .voice_session import VoiceSession
 from .voice_log import VoiceLog
 from .doctor_slot import DoctorSlot
 from .appointment import Appointment
+from .doctor import Doctor  
 
 __all__ = [
     "Base",
@@ -14,4 +15,5 @@ __all__ = [
     "VoiceLog",
     "DoctorSlot",
     "Appointment",
+    "Doctor",  
 ]

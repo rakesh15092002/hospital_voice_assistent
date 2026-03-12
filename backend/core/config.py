@@ -1,13 +1,15 @@
 # core/config.py
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
+from typing import Optional
 
 
 class Settings(BaseSettings):
     # --- App ---
     APP_NAME: str = "Hospital Voice Assistant"
-    DEBUG: bool = True
+    DEBUG: bool = False  # ✅ Fix 3 - default False, .env se override karo
 
     # --- Database ---
     DATABASE_URL: str = "sqlite:///./hospital_chatbot.db"
@@ -28,17 +30,17 @@ class Settings(BaseSettings):
     # --- Email ---
     EMAIL_HOST: str = "smtp.gmail.com"
     EMAIL_PORT: int = 587
-    EMAIL_USER: str = ""
-    EMAIL_PASSWORD: str = ""
+    EMAIL_USER: Optional[str] = None      # ✅ Fix 1 - None so we can check
+    EMAIL_PASSWORD: Optional[str] = None  # ✅ Fix 1 - None so we can check
 
-    # --- Hospital (hardcoded) ---
+    # --- Hospital ---
     HOSPITAL_NAME: str = "City Hospital"
     HOSPITAL_EMERGENCY_PHONE: str = "108"
     HOSPITAL_OPENING_TIME: str = "08:00:00"
     HOSPITAL_ADDRESS: str = "123 Main Street"
 
-    class Config:
-        env_file = ".env"
+    # ✅ Fix 2 - Pydantic v2 style
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
 @lru_cache()

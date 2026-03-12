@@ -10,22 +10,19 @@ from schemas.appointment import AppointmentCreate, AppointmentStatus
 from core.email import send_appointment_email
 
 
+# ✅ Fix - agent.tools se import mat karo, yahan hi likho
 def load_doctors() -> list[dict]:
-    """Load doctors from JSON file"""
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     json_path = os.path.join(base_dir, "data", "doctors.json")
     with open(json_path, "r") as f:
         return json.load(f)
 
 
-# --- Create --- book appointment
 def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointment | None:
-    # Check if slot is available
     slot = db.query(DoctorSlot).filter(DoctorSlot.id == appointment.slot_id).first()
     if not slot or slot.is_booked:
         return None
 
-    # Create appointment — status comes from schema, not hardcoded
     db_appointment = Appointment(
         user_id=appointment.user_id,
         doctor_id=appointment.doctor_id,
@@ -33,8 +30,6 @@ def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointme
         status=appointment.status,
     )
     db.add(db_appointment)
-
-    # Mark slot as booked
     slot.is_booked = True
     db.commit()
     db.refresh(db_appointment)
@@ -56,22 +51,19 @@ def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointme
                 appointment_id=db_appointment.id,
             )
     except Exception as e:
-        print(f"[EMAIL ERROR] Could not send email: {e}")
+        print(f"[EMAIL ERROR] {e}")
 
     return db_appointment
 
 
-# --- Get by ID ---
 def get_appointment(db: Session, appointment_id: int) -> Appointment | None:
     return db.query(Appointment).filter(Appointment.id == appointment_id).first()
 
 
-# --- Get All by User ---
 def get_user_appointments(db: Session, user_id: int) -> list[Appointment]:
     return db.query(Appointment).filter(Appointment.user_id == user_id).all()
 
 
-# --- Update Status ---
 def update_appointment_status(db: Session, appointment_id: int, status: AppointmentStatus) -> Appointment | None:
     db_appointment = get_appointment(db, appointment_id)
     if not db_appointment:
@@ -82,13 +74,11 @@ def update_appointment_status(db: Session, appointment_id: int, status: Appointm
     return db_appointment
 
 
-# --- Cancel --- free the slot too
 def cancel_appointment(db: Session, appointment_id: int) -> bool:
     db_appointment = get_appointment(db, appointment_id)
     if not db_appointment:
         return False
 
-    # Free the slot
     slot = db.query(DoctorSlot).filter(DoctorSlot.id == db_appointment.slot_id).first()
     if slot:
         slot.is_booked = False

@@ -1,22 +1,27 @@
 # database.py
 
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base
-from dotenv import load_dotenv
+from core.config import settings
 
-# Load .env file
-load_dotenv()
 
-# Get DATABASE_URL from .env, fallback to SQLite if not found
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./hospital_chatbot.db")
+# ✅ Fix 1 - SQLite aur PostgreSQL dono support
+def get_engine():
+    if settings.DATABASE_URL.startswith("sqlite"):
+        return create_engine(
+            settings.DATABASE_URL,
+            connect_args={"check_same_thread": False},  # SQLite only
+            echo=settings.DEBUG,  # ✅ Fix 3 - DEBUG mode se control
+        )
+    else:
+        return create_engine(
+            settings.DATABASE_URL,
+            echo=settings.DEBUG,  # ✅ Fix 3 - DEBUG mode se control
+        )
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},  # Required for SQLite + FastAPI
-    echo=True,
-)
+
+engine = get_engine()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -31,5 +36,5 @@ def get_db() -> Session:
 
 
 def create_tables():
-    """Create all tables. Call once on startup."""
+    """Create all tables on startup."""
     Base.metadata.create_all(bind=engine)

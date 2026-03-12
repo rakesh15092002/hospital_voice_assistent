@@ -11,11 +11,9 @@ from core.security import decode_access_token
 from fastapi.security import OAuth2PasswordBearer
 
 router = APIRouter(prefix="/livekit", tags=["LiveKit"])
-
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-# --- Get Current User from Token ---
 def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
     payload = decode_access_token(token)
     if not payload:
@@ -26,7 +24,6 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
     return int(payload.get("sub"))
 
 
-# --- Generate LiveKit Token ---
 @router.post("/token")
 def generate_livekit_token(
     db: Session = Depends(get_db),
@@ -35,15 +32,19 @@ def generate_livekit_token(
     try:
         room_name = f"hospital_room_{user_id}"
 
-        # Create LiveKit token
-        token = AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
-        token.with_identity(str(user_id))
-        token.with_name(f"user_{user_id}")
-        token.with_grants(VideoGrants(room_join=True, room=room_name))
+        # ✅ Fix 4 - keyword arguments use karo
+        token = (
+            AccessToken(
+                api_key=settings.LIVEKIT_API_KEY,
+                api_secret=settings.LIVEKIT_API_SECRET
+            )
+            .with_identity(str(user_id))
+            .with_name(f"user_{user_id}")
+            .with_grants(VideoGrants(room_join=True, room=room_name))
+        )
 
         jwt_token = token.to_jwt()
 
-        # Check if session already exists — avoid duplicate sessions
         existing_session = get_session_by_livekit_sid(db, room_name)
         if existing_session:
             session = existing_session
@@ -67,7 +68,6 @@ def generate_livekit_token(
         )
 
 
-# --- End Session --- webhook from LiveKit
 @router.post("/webhook")
 async def livekit_webhook(payload: dict):
     try:
@@ -78,8 +78,11 @@ async def livekit_webhook(payload: dict):
         if event == "room_finished" and livekit_sid:
             from database import SessionLocal
             db = SessionLocal()
-            end_voice_session(db, livekit_sid)
-            db.close()
+            # ✅ Fix 5 - finally block add kiya
+            try:
+                end_voice_session(db, livekit_sid)
+            finally:
+                db.close()
 
         return {"status": "ok"}
 

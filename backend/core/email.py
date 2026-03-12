@@ -16,17 +16,23 @@ def send_appointment_email(
     appointment_id: int,
 ) -> bool:
     """Send appointment confirmation email to patient"""
+
+    # ✅ Fix 1 - Check credentials before sending
+    if not settings.EMAIL_USER or not settings.EMAIL_PASSWORD:
+        print("[EMAIL SKIPPED] Email credentials not configured in .env")
+        return False
+
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Appointment Confirmed - City Hospital (ID: #{appointment_id})"
-        msg["From"] = settings.EMAIL_USER
+        msg["From"] = settings.EMAIL_USER  # ✅ Now safe
         msg["To"] = to_email
 
         html = f"""
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
             <div style="background-color: #0077b6; padding: 20px; border-radius: 8px 8px 0 0;">
-                <h1 style="color: white; margin: 0;">🏥 City Hospital</h1>
+                <h1 style="color: white; margin: 0;">🏥 {settings.HOSPITAL_NAME}</h1>
                 <p style="color: #caf0f8; margin: 5px 0;">Appointment Confirmation</p>
             </div>
             <div style="background-color: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px;">
@@ -59,10 +65,10 @@ def send_appointment_email(
                 <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
                     <p style="margin: 0;">⚠️ <strong>Important:</strong> Please arrive 10 minutes before your appointment time.</p>
                 </div>
-                <p>For emergencies, call: <strong>108</strong></p>
-                <p>Hospital Address: <strong>123 Main Street</strong></p>
+                <p>For emergencies, call: <strong>{settings.HOSPITAL_EMERGENCY_PHONE}</strong></p>
+                <p>Hospital Address: <strong>{settings.HOSPITAL_ADDRESS}</strong></p>
                 <hr style="border: none; border-top: 1px solid #dee2e6; margin: 20px 0;">
-                <p style="color: #666; font-size: 12px;">This is an automated email from City Hospital Voice Assistant. Please do not reply.</p>
+                <p style="color: #666; font-size: 12px;">This is an automated email from {settings.HOSPITAL_NAME} Voice Assistant. Please do not reply.</p>
             </div>
         </body>
         </html>
@@ -73,7 +79,7 @@ def send_appointment_email(
         with smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT) as server:
             server.starttls()
             server.login(settings.EMAIL_USER, settings.EMAIL_PASSWORD)
-            server.sendmail(settings.EMAIL_USER, to_email, msg.as_string())
+            server.send_message(msg)  # ✅ Fix 2 - send_message use karo
 
         print(f"[EMAIL SENT] Appointment #{appointment_id} confirmation sent to {to_email}")
         return True
