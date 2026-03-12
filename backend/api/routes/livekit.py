@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from livekit.api import AccessToken, VideoGrants
 from database import get_db
-from crud.voice_session import create_voice_session, end_voice_session
+from crud.voice_session import create_voice_session, end_voice_session, get_session_by_livekit_sid
 from schemas.voice_session import VoiceSessionCreate
 from core.config import settings
 from core.security import decode_access_token
@@ -33,23 +33,29 @@ def generate_livekit_token(
     user_id: int = Depends(get_current_user_id),
 ):
     try:
-        # create livekit token
+        room_name = f"hospital_room_{user_id}"
+
+        # Create LiveKit token
         token = AccessToken(settings.LIVEKIT_API_KEY, settings.LIVEKIT_API_SECRET)
         token.with_identity(str(user_id))
         token.with_name(f"user_{user_id}")
-        token.with_grants(VideoGrants(room_join=True, room=f"hospital_room_{user_id}"))
+        token.with_grants(VideoGrants(room_join=True, room=room_name))
 
         jwt_token = token.to_jwt()
 
-        # save voice session in DB
-        session = create_voice_session(db, VoiceSessionCreate(
-            user_id=user_id,
-            livekit_sid=f"hospital_room_{user_id}",
-        ))
+        # Check if session already exists — avoid duplicate sessions
+        existing_session = get_session_by_livekit_sid(db, room_name)
+        if existing_session:
+            session = existing_session
+        else:
+            session = create_voice_session(db, VoiceSessionCreate(
+                user_id=user_id,
+                livekit_sid=room_name,
+            ))
 
         return {
             "token": jwt_token,
-            "room": f"hospital_room_{user_id}",
+            "room": room_name,
             "livekit_url": settings.LIVEKIT_URL,
             "session_id": session.id,
         }

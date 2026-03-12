@@ -1,3 +1,5 @@
+# crud/appointment.py
+
 from sqlalchemy.orm import Session
 from models.appointment import Appointment
 from models.doctor_slot import DoctorSlot
@@ -11,12 +13,12 @@ def create_appointment(db: Session, appointment: AppointmentCreate) -> Appointme
     if not slot or slot.is_booked:
         return None  # slot already booked hai
 
-    # appointment banao
+    # appointment banao — status schema se aayega, hardcoded nahi
     db_appointment = Appointment(
         user_id=appointment.user_id,
         doctor_id=appointment.doctor_id,
         slot_id=appointment.slot_id,
-        status=AppointmentStatus.pending,
+        status=appointment.status,  # fix: pehle hardcoded AppointmentStatus.pending tha
     )
     db.add(db_appointment)
 

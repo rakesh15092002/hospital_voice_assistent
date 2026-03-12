@@ -1,51 +1,41 @@
 # schemas/appointment.py
 
+from __future__ import annotations
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 
-# --- Status Enum --- only these 3 values allowed
+# --- Status Enum ---
 class AppointmentStatus(str, Enum):
     pending = "pending"
     confirmed = "confirmed"
     cancelled = "cancelled"
 
 
-# --- Base --- common fields
+# --- Base ---
 class AppointmentBase(BaseModel):
-    user_id: int
     doctor_id: int
     slot_id: int
     status: AppointmentStatus = AppointmentStatus.pending
 
 
-# --- Create --- request body
+# --- Create ---
+# user_id optional hai — route mein JWT token se automatically set hoga
 class AppointmentCreate(AppointmentBase):
-    pass
+    user_id: Optional[int] = None
 
 
-# --- Update --- optional fields
+# --- Update ---
 class AppointmentUpdate(BaseModel):
     status: AppointmentStatus | None = None
 
 
-# --- Response --- what API returns
+# --- Response ---
 class AppointmentResponse(AppointmentBase):
     id: int
+    user_id: int | None
     created_at: datetime | None
-
-    model_config = {"from_attributes": True}
-
-
-# --- Response with Details --- nested full response
-class AppointmentWithDetails(AppointmentResponse):
-    from schemas.user import UserResponse
-    from schemas.doctor import DoctorResponse
-    from schemas.doctor_slot import DoctorSlotResponse
-
-    user: UserResponse | None = None
-    doctor: DoctorResponse | None = None
-    slot: DoctorSlotResponse | None = None
 
     model_config = {"from_attributes": True}

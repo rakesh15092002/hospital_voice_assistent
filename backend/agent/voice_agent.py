@@ -1,9 +1,11 @@
+# agent/voice_agent.py
+
 import json
 import sys
 import os
 from dotenv import load_dotenv
 
-# .env load karo
+# Load .env file
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -25,7 +27,8 @@ from agent.tools import (
     save_voice_log,
 )
 from database import SessionLocal
-from crud.voice_session import get_session_by_livekit_sid
+from crud.voice_session import get_session_by_livekit_sid, create_voice_session
+from schemas.voice_session import VoiceSessionCreate
 
 
 class HospitalAssistant(Agent):
@@ -101,12 +104,81 @@ class HospitalAssistant(Agent):
 async def entrypoint(ctx: JobContext):
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
+    # Get user_id from room metadata (set by frontend/postman)
+    user_id = int(ctx.room.metadata) if ctx.room.metadata else None
+    room_name = ctx.room.name
+
+    print(f"[AGENT] Room: {room_name} | User ID: {user_id}")
+
+    # Get or create voice session in DB
+    db = SessionLocal()
+    try:
+        session_obj = get_session_by_livekit_sid(db, room_name)
+        if not session_obj:
+            # Auto create session if not found (e.g. from playground)
+            session_obj = create_voice_session(db, VoiceSessionCreate(
+                user_id=user_id,
+                livekit_sid=room_name,
+            ))
+            print(f"[AGENT] New session created: {session_obj.id}")
+        else:
+            print(f"[AGENT] Existing session found: {session_obj.id}")
+        session_id = session_obj.id
+    finally:
+        db.close()
+
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=openai.STT(),
         llm=openai.LLM(model="gpt-4o-mini"),
         tts=openai.TTS(voice="alloy"),
     )
+
+    # Store last user transcript
+    last_user_transcript = {"text": ""}
+
+    @session.on("user_input_transcribed")
+    def on_user_transcribed(event) -> None:
+        if hasattr(event, "is_final") and event.is_final:
+            last_user_transcript["text"] = event.transcript
+            print(f"[TRANSCRIPT] {event.transcript}")
+
+    @session.on("conversation_item_added")
+    def on_conversation_item(event) -> None:
+        try:
+            item = event.item
+            if hasattr(item, "role") and item.role == "assistant":
+                agent_response = ""
+                if hasattr(item, "text_content"):
+                    agent_response = item.text_content or ""
+
+                transcript = last_user_transcript["text"]
+                if not transcript:
+                    return
+
+                # Check for emergency keywords
+                is_emergency = any(word in transcript.lower() for word in [
+                    "chest pain", "can't breathe", "unconscious",
+                    "severe bleeding", "stroke", "heart attack"
+                ])
+
+                db = SessionLocal()
+                try:
+                    save_voice_log(
+                        db=db,
+                        session_id=session_id,
+                        transcript=transcript,
+                        ai_response=agent_response,
+                        is_emergency=is_emergency,
+                    )
+                    print(f"[LOG SAVED] session={session_id} emergency={is_emergency}")
+                finally:
+                    db.close()
+
+                # Reset after saving
+                last_user_transcript["text"] = ""
+        except Exception as e:
+            print(f"[LOG ERROR] {e}")
 
     await session.start(
         room=ctx.room,
