@@ -3,14 +3,25 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from models import Base
+from core.config import settings
 
-DATABASE_URL = "sqlite:///./hospital_chatbot.db"
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},  # Required for SQLite + FastAPI
-    echo=True,
-)
+# ✅ Fix 1 - SQLite and PostgreSQL support
+def get_engine():
+    if settings.DATABASE_URL.startswith("sqlite"):
+        return create_engine(
+            settings.DATABASE_URL,
+            connect_args={"check_same_thread": False},  
+            echo=settings.DEBUG, 
+        )
+    else:
+        return create_engine(
+            settings.DATABASE_URL,
+            echo=settings.DEBUG,  
+        )
+
+
+engine = get_engine()
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -25,5 +36,5 @@ def get_db() -> Session:
 
 
 def create_tables():
-    """Create all tables. Call once on startup."""
+    """Create all tables on startup."""
     Base.metadata.create_all(bind=engine)

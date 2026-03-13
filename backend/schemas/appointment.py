@@ -4,6 +4,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 
 # --- Status Enum ---
@@ -15,15 +16,15 @@ class AppointmentStatus(str, Enum):
 
 # --- Base ---
 class AppointmentBase(BaseModel):
-    user_id: int
     doctor_id: int
     slot_id: int
     status: AppointmentStatus = AppointmentStatus.pending
 
 
 # --- Create ---
+# user_id optional hai — route mein JWT token se automatically set hoga
 class AppointmentCreate(AppointmentBase):
-    pass
+    user_id: Optional[int] = None
 
 
 # --- Update ---
@@ -34,6 +35,7 @@ class AppointmentUpdate(BaseModel):
 # --- Response ---
 class AppointmentResponse(AppointmentBase):
     id: int
+    user_id: int | None
     created_at: datetime | None
 
     model_config = {"from_attributes": True}
