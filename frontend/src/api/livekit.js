@@ -1,7 +1,13 @@
 import API from "./axios";
 
-// Fetch LiveKit token and url from backend to join voice room
 export const getLiveKitToken = async () => {
   const response = await API.post("/livekit/token");
-  return response.data;
+  const data = response.data;
+  // Backend returns livekit_url, frontend needs url
+  return {
+    token: data.token,
+    url: data.livekit_url,
+    room: data.room,
+    session_id: data.session_id,
+  };
 };

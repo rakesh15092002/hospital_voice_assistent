@@ -5,51 +5,40 @@ import {
   cancelAppointment,
 } from "../api/appointment";
 
-// Create context
 const AppointmentContext = createContext();
+
+export const useAppointment = () => useContext(AppointmentContext);
 
 export const AppointmentProvider = ({ children }) => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
-  // Fetch all appointments of logged in user
+  // Fetch all appointments
   const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      setLoading(true);
-      setError(null);
       const data = await getMyAppointments();
       setAppointments(data);
     } catch (err) {
-      setError("Failed to fetch appointments");
+      setError("Failed to load appointments.");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Book a new appointment
-  const book = async (doctor_id, slot_id) => {
-    try {
-      setError(null);
-      const data = await bookAppointment(doctor_id, slot_id);
-      await fetchAppointments();
-      return data;
-    } catch (err) {
-      setError("Failed to book appointment");
-      throw err;
-    }
+  // Book new appointment
+  const book = async (appointmentData) => {
+    const data = await bookAppointment(appointmentData);
+    await fetchAppointments();
+    return data;
   };
 
-  // Cancel an existing appointment
-  const cancel = async (appointment_id) => {
-    try {
-      setError(null);
-      await cancelAppointment(appointment_id);
-      await fetchAppointments();
-    } catch (err) {
-      setError("Failed to cancel appointment");
-      throw err;
-    }
+  // Cancel appointment
+  const cancel = async (id) => {
+    await cancelAppointment(id);
+    await fetchAppointments();
   };
 
   return (
@@ -60,6 +49,3 @@ export const AppointmentProvider = ({ children }) => {
     </AppointmentContext.Provider>
   );
 };
-
-// Custom hook to use AppointmentContext anywhere
-export const useAppointment = () => useContext(AppointmentContext);

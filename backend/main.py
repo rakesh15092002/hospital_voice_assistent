@@ -5,11 +5,12 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import create_tables, SessionLocal
-from api.routes import auth, appointment, livekit
+from api.routes import auth, appointment, livekit,voice
 from core.config import settings
 from models.doctor import Doctor
 from models.doctor_slot import DoctorSlot
 from agent.tools import load_doctors
+
 
 
 def seed_doctors():
@@ -113,7 +114,7 @@ app = FastAPI(
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -121,6 +122,7 @@ app.add_middleware(
 
 # --- Routes ---
 app.include_router(auth.router)
+app.include_router(voice.router)
 app.include_router(appointment.router)
 app.include_router(livekit.router)
 
@@ -135,3 +137,4 @@ def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    

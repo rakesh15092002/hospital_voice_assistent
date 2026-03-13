@@ -5,13 +5,11 @@ import { useAuth } from "../../context/AuthContext";
 const LoginForm = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Handle login form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -27,76 +25,71 @@ const LoginForm = () => {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f0f4ff",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        style={{
-          background: "white",
-          borderRadius: "16px",
-          padding: "32px 28px",
-          width: "100%",
-          maxWidth: "400px",
-          border: "1px solid #e2e8f0",
-        }}
-      >
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "28px" }}>
-          <div
-            style={{
-              width: "60px",
-              height: "60px",
-              background: "#e6f1fb",
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto 14px",
-            }}
-          >
-            <svg width="28" height="28" fill="#1a56db" viewBox="0 0 24 24">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0f1e",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "20px",
+    }}>
+      {/* Glow bg */}
+      <div style={{
+        position: "fixed", top: "20%", left: "50%", transform: "translateX(-50%)",
+        width: "400px", height: "400px",
+        background: "radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        borderRadius: "20px",
+        padding: "36px 32px",
+        width: "100%",
+        maxWidth: "400px",
+        backdropFilter: "blur(20px)",
+      }}>
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div style={{
+            width: "64px", height: "64px",
+            background: "rgba(52,211,153,0.1)",
+            border: "1px solid rgba(52,211,153,0.2)",
+            borderRadius: "16px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 16px",
+          }}>
+            <svg width="28" height="28" fill="#34d399" viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z" />
             </svg>
           </div>
-          <h2 style={{ fontSize: "20px", fontWeight: "600", color: "#1e293b" }}>
+          <h2 style={{ fontSize: "22px", fontWeight: "700", color: "#f1f5f9" }}>
             Welcome Back
           </h2>
-          <p style={{ fontSize: "13px", color: "#94a3b8", marginTop: "4px" }}>
-            Sign in to your account
+          <p style={{ fontSize: "13px", color: "#64748b", marginTop: "4px" }}>
+            Sign in to City Care Hospital
           </p>
         </div>
 
-        {/* Error message */}
         {error && (
-          <div
-            style={{
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "8px",
-              padding: "10px 14px",
-              fontSize: "13px",
-              color: "#dc2626",
-              marginBottom: "16px",
-            }}
-          >
+          <div style={{
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid rgba(239,68,68,0.2)",
+            borderRadius: "10px",
+            padding: "10px 14px",
+            fontSize: "13px",
+            color: "#f87171",
+            marginBottom: "20px",
+          }}>
             {error}
           </div>
         )}
 
-        {/* Form */}
         <form onSubmit={handleSubmit}>
           {/* Email */}
           <div style={{ marginBottom: "16px" }}>
-            <label
-              style={{ fontSize: "13px", color: "#64748b", display: "block", marginBottom: "6px" }}
-            >
+            <label style={{ fontSize: "12px", color: "#64748b", display: "block", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Email Address
             </label>
             <input
@@ -107,21 +100,21 @@ const LoginForm = () => {
               required
               style={{
                 width: "100%",
-                padding: "10px 14px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
+                padding: "12px 16px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "10px",
                 fontSize: "14px",
                 outline: "none",
-                color: "#1e293b",
+                color: "#f1f5f9",
+                boxSizing: "border-box",
               }}
             />
           </div>
 
           {/* Password */}
-          <div style={{ marginBottom: "20px" }}>
-            <label
-              style={{ fontSize: "13px", color: "#64748b", display: "block", marginBottom: "6px" }}
-            >
+          <div style={{ marginBottom: "24px" }}>
+            <label style={{ fontSize: "12px", color: "#64748b", display: "block", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Password
             </label>
             <input
@@ -132,45 +125,41 @@ const LoginForm = () => {
               required
               style={{
                 width: "100%",
-                padding: "10px 14px",
-                border: "1px solid #e2e8f0",
-                borderRadius: "8px",
+                padding: "12px 16px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "10px",
                 fontSize: "14px",
                 outline: "none",
-                color: "#1e293b",
+                color: "#f1f5f9",
+                boxSizing: "border-box",
               }}
             />
           </div>
 
-          {/* Submit button */}
           <button
             type="submit"
             disabled={loading}
             style={{
               width: "100%",
-              padding: "12px",
-              background: loading ? "#93c5fd" : "#1a56db",
+              padding: "13px",
+              background: loading ? "rgba(52,211,153,0.4)" : "linear-gradient(135deg, #34d399, #059669)",
               color: "white",
               border: "none",
-              borderRadius: "8px",
+              borderRadius: "10px",
               fontSize: "14px",
               fontWeight: "600",
               cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: "0 0 20px rgba(52,211,153,0.2)",
             }}
           >
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
 
-        {/* Register link */}
-        <p
-          style={{ textAlign: "center", fontSize: "13px", color: "#64748b", marginTop: "16px" }}
-        >
+        <p style={{ textAlign: "center", fontSize: "13px", color: "#475569", marginTop: "20px" }}>
           Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/register")}
-            style={{ color: "#1a56db", cursor: "pointer", fontWeight: "500" }}
-          >
+          <span onClick={() => navigate("/register")} style={{ color: "#34d399", cursor: "pointer", fontWeight: "600" }}>
             Register
           </span>
         </p>
