@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { loginUser, registerUser } from "../api/auth";
 
-// Create context
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -13,7 +12,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
-    if (savedToken && savedUser) {
+    // Fix 1 - check undefined before JSON.parse
+    if (savedToken && savedUser && savedUser !== "undefined") {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
     }
@@ -24,9 +24,16 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const data = await loginUser(email, password);
     setToken(data.access_token);
-    setUser(data.user);
+
+    // Fix 2 - backend returns user data directly, not data.user
+    const userData = {
+      id: data.user_id,
+      name: data.name,
+      email: email,
+    };
+    setUser(userData);
     localStorage.setItem("token", data.access_token);
-    localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("user", JSON.stringify(userData));
     return data;
   };
 
@@ -44,7 +51,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
   };
 
-  // Check if user is logged in
   const isAuthenticated = !!token;
 
   return (
@@ -56,5 +62,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use AuthContext anywhere
 export const useAuth = () => useContext(AuthContext);
