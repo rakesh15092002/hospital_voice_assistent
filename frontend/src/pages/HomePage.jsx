@@ -6,10 +6,11 @@ import Waveform from "../components/voice/Waveform";
 import QuickActions from "../components/voice/QuickActions";
 import ChatBubble from "../components/voice/ChatBubble";
 import { useState, useEffect, useRef } from "react";
+import { getSessionLogs } from "../api/voice";
 
 const HomePage = () => {
   const { user, logout } = useAuth();
-  const { status } = useApp();
+  const { status, currentSessionId } = useApp();
   const navigate = useNavigate();
   const [messages, setMessages] = useState([
     { id: 1, text: "Hello! I'm Eve, your hospital assistant. How can I help you today?", isUser: false },
@@ -20,6 +21,32 @@ const HomePage = () => {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    let interval;
+    if (status === "recording" && currentSessionId) {
+      interval = setInterval(async () => {
+        try {
+          const logs = await getSessionLogs(currentSessionId);
+          const newMessages = logs.map(log => [
+            { id: `user-${log.id}`, text: log.transcript, isUser: true },
+            log.ai_response ? { id: `eve-${log.id}`, text: log.ai_response, isUser: false } : null
+          ]).flat().filter(Boolean);
+          setMessages(prev => {
+            // Avoid duplicates by checking ids
+            const existingIds = new Set(prev.map(m => m.id));
+            const uniqueNew = newMessages.filter(m => !existingIds.has(m.id));
+            return [...prev, ...uniqueNew];
+          });
+        } catch (err) {
+          console.error("Failed to fetch logs:", err);
+        }
+      }, 2000); // Poll every 2 seconds
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [status, currentSessionId]);
 
   const addMessage = (text, isUser) => {
     setMessages((prev) => [...prev, { id: Date.now(), text, isUser }]);
@@ -143,7 +170,7 @@ const HomePage = () => {
 
         {/* LEFT SIDE — Mic + Waveform + Quick Actions */}
         <div style={{
-          width: "380px",
+          width: "680px",
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",

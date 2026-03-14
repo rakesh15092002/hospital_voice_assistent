@@ -11,7 +11,6 @@ const VoiceHistoryPage = () => {
   const [loadingLogs, setLoadingLogs] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch all sessions on mount
   useEffect(() => {
     fetchSessions();
   }, []);
@@ -28,7 +27,6 @@ const VoiceHistoryPage = () => {
     }
   };
 
-  // Fetch logs when session is selected
   const handleSessionClick = async (session) => {
     if (selectedSession?.id === session.id) {
       setSelectedSession(null);
@@ -62,14 +60,14 @@ const VoiceHistoryPage = () => {
       <div style={{
         display: "flex", alignItems: "center", gap: "14px",
         padding: "14px 20px",
-        background: "rgba(255,255,255,0.02)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        background: "#0d1117", /* navbar bg */
+        borderBottom: "1px solid #1e2433", /* navbar border */
         height: "65px",
       }}>
         <button onClick={() => navigate("/")} style={{
           width: "36px", height: "36px", borderRadius: "50%",
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "#161b27", /* button bg */
+          border: "1px solid #1e2433", /* button border */
           display: "flex", alignItems: "center", justifyContent: "center",
           cursor: "pointer",
         }}>
@@ -87,8 +85,8 @@ const VoiceHistoryPage = () => {
 
         {error && (
           <div style={{
-            background: "rgba(248,113,113,0.1)",
-            border: "1px solid rgba(248,113,113,0.2)",
+            background: "#2d1515", /* error bg — dark red */
+            border: "1px solid #5c2323", /* error border */
             borderRadius: "10px", padding: "12px 16px",
             fontSize: "13px", color: "#f87171", marginBottom: "16px",
           }}>
@@ -96,13 +94,12 @@ const VoiceHistoryPage = () => {
           </div>
         )}
 
-        {/* Loading sessions */}
         {loadingSessions ? (
           <div style={{ textAlign: "center", padding: "60px 0" }}>
             <div style={{
               width: "36px", height: "36px",
-              border: "3px solid rgba(255,255,255,0.05)",
-              borderTop: "3px solid #34d399",
+              border: "3px solid #1a1f2e", /* spinner track */
+              borderTop: "3px solid #34d399", /* spinner active */
               borderRadius: "50%",
               animation: "spin 0.8s linear infinite",
               margin: "0 auto",
@@ -113,12 +110,11 @@ const VoiceHistoryPage = () => {
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         ) : sessions.length === 0 ? (
-          /* Empty state */
           <div style={{ textAlign: "center", padding: "60px 16px" }}>
             <div style={{
               width: "64px", height: "64px",
-              background: "rgba(52,211,153,0.1)",
-              border: "1px solid rgba(52,211,153,0.15)",
+              background: "#0d2d20", /* empty state icon bg — dark green */
+              border: "1px solid #1a4a33", /* empty state icon border */
               borderRadius: "50%",
               display: "flex", alignItems: "center", justifyContent: "center",
               margin: "0 auto 16px",
@@ -133,7 +129,6 @@ const VoiceHistoryPage = () => {
             </p>
           </div>
         ) : (
-          /* Sessions list */
           <div>
             <p style={{ fontSize: "13px", color: "#475569", marginBottom: "14px" }}>
               {sessions.length} session{sessions.length > 1 ? "s" : ""} found
@@ -141,16 +136,15 @@ const VoiceHistoryPage = () => {
 
             {sessions.map((session) => (
               <div key={session.id}>
-                {/* Session card */}
                 <div
                   onClick={() => handleSessionClick(session)}
                   style={{
                     background: selectedSession?.id === session.id
-                      ? "rgba(52,211,153,0.05)"
-                      : "rgba(255,255,255,0.03)",
+                      ? "#0d2d20" /* selected session bg — dark green */
+                      : "#0f1420", /* unselected session bg */
                     border: selectedSession?.id === session.id
-                      ? "1px solid rgba(52,211,153,0.2)"
-                      : "1px solid rgba(255,255,255,0.07)",
+                      ? "1px solid #1a4a33" /* selected border */
+                      : "1px solid #1a2030", /* unselected border */
                     borderRadius: "14px",
                     padding: "14px 16px",
                     marginBottom: "8px",
@@ -160,11 +154,10 @@ const VoiceHistoryPage = () => {
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                      {/* Icon */}
                       <div style={{
                         width: "38px", height: "38px", borderRadius: "10px",
-                        background: "rgba(52,211,153,0.1)",
-                        border: "1px solid rgba(52,211,153,0.2)",
+                        background: "#0d2d20", /* icon bg — dark green */
+                        border: "1px solid #1a4a33", /* icon border */
                         display: "flex", alignItems: "center", justifyContent: "center",
                       }}>
                         <svg width="18" height="18" fill="#34d399" viewBox="0 0 24 24">
@@ -175,13 +168,13 @@ const VoiceHistoryPage = () => {
                         <p style={{ fontSize: "13px", fontWeight: "600", color: "#f1f5f9" }}>
                           Session #{session.id}
                         </p>
+                        {/* ✅ FIXED: created_at → started_at */}
                         <p style={{ fontSize: "11px", color: "#475569", marginTop: "2px" }}>
-                          {formatDate(session.created_at)}
+                          {formatDate(session.started_at)}
                         </p>
                       </div>
                     </div>
 
-                    {/* Arrow */}
                     <svg
                       width="16" height="16" fill="#475569" viewBox="0 0 24 24"
                       style={{
@@ -194,20 +187,19 @@ const VoiceHistoryPage = () => {
                   </div>
                 </div>
 
-                {/* Logs expanded */}
                 {selectedSession?.id === session.id && (
                   <div style={{
                     marginBottom: "12px",
                     marginLeft: "12px",
-                    borderLeft: "2px solid rgba(52,211,153,0.2)",
+                    borderLeft: "2px solid #1a4a33", /* thread line — dark green */
                     paddingLeft: "12px",
                   }}>
                     {loadingLogs ? (
                       <div style={{ padding: "20px 0", textAlign: "center" }}>
                         <div style={{
                           width: "24px", height: "24px",
-                          border: "2px solid rgba(255,255,255,0.05)",
-                          borderTop: "2px solid #34d399",
+                          border: "2px solid #1a1f2e", /* spinner track */
+                          borderTop: "2px solid #34d399", /* spinner active */
                           borderRadius: "50%",
                           animation: "spin 0.8s linear infinite",
                           margin: "0 auto",
@@ -220,18 +212,17 @@ const VoiceHistoryPage = () => {
                     ) : (
                       logs.map((log) => (
                         <div key={log.id} style={{
-                          background: "rgba(255,255,255,0.02)",
-                          border: "1px solid rgba(255,255,255,0.05)",
+                          background: "#0d1117", /* log card bg */
+                          border: "1px solid #1a1f2e", /* log card border */
                           borderRadius: "10px",
                           padding: "12px",
                           marginBottom: "8px",
                         }}>
-                          {/* Emergency badge */}
                           {log.is_emergency && (
                             <span style={{
                               display: "inline-block",
-                              background: "rgba(248,113,113,0.1)",
-                              border: "1px solid rgba(248,113,113,0.2)",
+                              background: "#2d1515", /* emergency badge bg */
+                              border: "1px solid #5c2323", /* emergency badge border */
                               color: "#f87171",
                               fontSize: "10px", fontWeight: "600",
                               padding: "2px 8px", borderRadius: "20px",
@@ -248,8 +239,8 @@ const VoiceHistoryPage = () => {
                             </p>
                             <p style={{
                               fontSize: "13px", color: "#94a3b8",
-                              background: "rgba(96,165,250,0.05)",
-                              border: "1px solid rgba(96,165,250,0.1)",
+                              background: "#0d1a2d", /* user bubble bg — dark blue */
+                              border: "1px solid #1a2d4a", /* user bubble border */
                               borderRadius: "8px", padding: "8px 10px",
                             }}>
                               {log.transcript}
@@ -264,8 +255,8 @@ const VoiceHistoryPage = () => {
                               </p>
                               <p style={{
                                 fontSize: "13px", color: "#a7f3d0",
-                                background: "rgba(52,211,153,0.05)",
-                                border: "1px solid rgba(52,211,153,0.1)",
+                                background: "#0d2d20", /* eve bubble bg — dark green */
+                                border: "1px solid #1a4a33", /* eve bubble border */
                                 borderRadius: "8px", padding: "8px 10px",
                               }}>
                                 {log.ai_response}
@@ -273,7 +264,7 @@ const VoiceHistoryPage = () => {
                             </div>
                           )}
 
-                          {/* Time */}
+                          {/* Timestamp */}
                           <p style={{ fontSize: "10px", color: "#334155", marginTop: "8px" }}>
                             {formatDate(log.created_at)}
                           </p>

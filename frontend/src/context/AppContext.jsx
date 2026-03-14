@@ -11,6 +11,7 @@ export const useApp = () => useContext(AppStateContext);
 const AppStateProvider = ({ children }) => {
   const [status, setStatus] = useState("idle");
   const [analyser, setAnalyser] = useState(null);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const roomRef = useRef(null);
   const audioCtxRef = useRef(null);
 
@@ -32,7 +33,8 @@ const AppStateProvider = ({ children }) => {
     try {
       setStatus("processing");
       const data = await getLiveKitToken();
-      const { token, url } = data;
+      const { token, url, session_id } = data;
+      setCurrentSessionId(session_id);
 
       const room = new Room({
         audioCaptureDefaults: { autoGainControl: true, echoCancellation: true, noiseSuppression: true },
@@ -50,6 +52,7 @@ const AppStateProvider = ({ children }) => {
       room.on(RoomEvent.Disconnected, () => {
         setStatus("idle");
         setAnalyser(null);
+        setCurrentSessionId(null);
       });
 
       await room.connect(url, token);
@@ -72,7 +75,7 @@ const AppStateProvider = ({ children }) => {
   };
 
   return (
-    <AppStateContext.Provider value={{ status, analyser, handleMicClick }}>
+    <AppStateContext.Provider value={{ status, analyser, handleMicClick, currentSessionId }}>
       {children}
     </AppStateContext.Provider>
   );

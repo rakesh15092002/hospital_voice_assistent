@@ -23,13 +23,13 @@ def get_my_sessions(
 ):
     sessions = db.query(VoiceSession).filter(
         VoiceSession.user_id == user_id
-    ).order_by(VoiceSession.created_at.desc()).all()
+    ).order_by(VoiceSession.started_at.desc()).all()
 
     return [
         {
             "id": s.id,
             "livekit_sid": s.livekit_sid,
-            "created_at": s.created_at,
+            "started_at": s.started_at,
             "ended_at": s.ended_at,
         }
         for s in sessions
