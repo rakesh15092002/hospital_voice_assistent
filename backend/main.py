@@ -114,7 +114,11 @@ app = FastAPI(
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000","https://hospital-voice-assistent-6vel-5mqha03yh-rakesh-mauryas-projects.vercel.app"],
+=======
+    allow_origins=["http://localhost:5173", "http://localhost:5174", "http://localhost:3000","https://hospital-voice-assistent-6vel-a5c5w7ph5-rakesh-mauryas-projects.vercel.app/","https://hospital-voice-assistent-6vel-df3y00lkv-rakesh-mauryas-projects.vercel.app"],
+>>>>>>> 38a1ca67e2525e7db443bef6a90bc40fb8a14683
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
